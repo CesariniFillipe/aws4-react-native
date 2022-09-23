@@ -10,6 +10,9 @@
     "test": "mocha ./test/fast.js -R list",
     "integration": "node ./test/slow.js"
   },
+  "dependencies": {
+    "crypto-js": "^4.1.1",
+  },
   "devDependencies": {
     "mocha": "^2.5.3",
     "should": "^8.4.0"
