@@ -1,18 +1,18 @@
 var aws4 = exports,
     url = require('url'),
     querystring = require('querystring'),
-    crypto = require('crypto'),
+    CryptoJS = require('crypto-js'),
     lru = require('./lru'),
     credentialsCache = lru(1000)
 
 // http://docs.amazonwebservices.com/general/latest/gr/signature-version-4.html
 
-function hmac(key, string, encoding) {
-  return crypto.createHmac('sha256', key).update(string, 'utf8').digest(encoding)
+function hmac(key, string) {
+  return CryptoJS.HmacSHA256(string, key);
 }
 
-function hash(string, encoding) {
-  return crypto.createHash('sha256').update(string, 'utf8').digest(encoding)
+function hash(string) {
+  return CryptoJS.SHA256(string).toString(CryptoJS.enc.Hex);
 }
 
 // This function assumes the string has already been percent encoded
@@ -209,13 +209,13 @@ RequestSigner.prototype.signature = function() {
       cacheKey = [this.credentials.secretAccessKey, date, this.region, this.service].join(),
       kDate, kRegion, kService, kCredentials = credentialsCache.get(cacheKey)
   if (!kCredentials) {
-    kDate = hmac('AWS4' + this.credentials.secretAccessKey, date)
-    kRegion = hmac(kDate, this.region)
-    kService = hmac(kRegion, this.service)
-    kCredentials = hmac(kService, 'aws4_request')
+    kDate = hmac('AWS4' + this.credentials.secretAccessKey, date, 'kDate')
+    kRegion = hmac(kDate, this.region, 'kRegion')
+    kService = hmac(kRegion, this.service, 'kService')
+    kCredentials = hmac(kService, 'aws4_request', 'kCredentials')
     credentialsCache.set(cacheKey, kCredentials)
   }
-  return hmac(kCredentials, this.stringToSign(), 'hex')
+  return hmac(kCredentials, this.stringToSign()).toString(CryptoJS.enc.Hex);
 }
 
 RequestSigner.prototype.stringToSign = function() {
